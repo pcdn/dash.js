@@ -28,9 +28,9 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import FactoryMaker from '../../core/FactoryMaker.js';
-import X2JS from '../../../externals/xml2json.js';
-import Debug from '../../core/Debug.js';
+import FactoryMaker from '../../core/FactoryMaker';
+import X2JS from '../../../externals/xml2json';
+import Debug from '../../core/Debug';
 
 const SECONDS_IN_HOUR = 60 * 60; // Expression of an hour in seconds
 const SECONDS_IN_MIN = 60; // Expression of a minute in seconds
@@ -73,8 +73,11 @@ function TTMLParser() {
     /**
      * Parse the raw data and process it to return the HTML element representing the cue.
      * Return the region to be processed and controlled (hide/show) by the caption controller.
-     * @param data: raw data received from the TextSourceBuffer
-     **/
+     * @param {string} data - raw data received from the TextSourceBuffer
+     * @param {number} intervalStart
+     * @param {number} intervalEnd
+     *
+     */
 
     function parse(data, intervalStart, intervalEnd) {
         let tt, // Top element
@@ -411,8 +414,8 @@ function TTMLParser() {
         lineHeight = {};
         linePadding = {};
         defaultLayoutProperties = {
-            'top': '85%;',
-            'left': '5%;',
+            'top': 'auto;',
+            'left': 'auto;',
             'width': '90%;',
             'height': '10%;',
             'align-items': 'flex-start;',
@@ -631,7 +634,7 @@ function TTMLParser() {
 
 
     // Compute the style properties to return an array with the cleaned properties.
-    function processStyle(cueStyle, cellUnit) {
+    function processStyle(cueStyle, cellUnit, includeRegionStyles) {
         var properties = [];
 
         // Clean up from the xml2json parsing:
@@ -762,6 +765,10 @@ function TTMLParser() {
             properties.push('text-decoration:' + cueStyle['text-decoration'] + ';');
         }
 
+        if (includeRegionStyles) {
+            properties = properties.concat(processRegion(cueStyle, cellUnit));
+        }
+
         // Handle white-space preserve
         if (ttml.tt.hasOwnProperty('xml:space')) {
             if (ttml.tt['xml:space'] === 'preserve') {
@@ -786,7 +793,7 @@ function TTMLParser() {
         return null;
     }
     // Return the computed style from a certain ID.
-    function getProcessedStyle(reference, cellUnit) {
+    function getProcessedStyle(reference, cellUnit, includeRegionStyles) {
         var styles = [];
         var ids = reference.match(/\S+/g);
         ids.forEach(function (id) {
@@ -795,7 +802,7 @@ function TTMLParser() {
             if (cueStyle) {
                 // Process the style for the cue in CSS form.
                 // Send a copy of the style object, so it does not modify the original by cleaning it.
-                var stylesFromId = processStyle(JSON.parse(JSON.stringify(cueStyle)), cellUnit);
+                var stylesFromId = processStyle(JSON.parse(JSON.stringify(cueStyle)), cellUnit, includeRegionStyles);
                 styles = styles.concat(stylesFromId);
             }
         });
@@ -848,7 +855,7 @@ function TTMLParser() {
         }
         // Style will give to the region the style properties from the style selected
         if ('style' in cueRegion) {
-            var styleFromID = getProcessedStyle(cueRegion.style, cellUnit);
+            var styleFromID = getProcessedStyle(cueRegion.style, cellUnit, true);
             properties = properties.concat(styleFromID);
         }
 
@@ -1001,12 +1008,13 @@ function TTMLParser() {
         return cueInnerHTML;
     }
 
-    /*** Create the cue element
+    /*
+    * Create the cue element
      * I. The cues are text only:
      *      i) The cue contains a 'br' element
      *      ii) The cue contains a span element
      *      iii) The cue contains text
-     * ***/
+     */
 
     function constructCue(cueElements, cellUnit) {
         var cue = document.createElement('div');

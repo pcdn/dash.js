@@ -28,25 +28,24 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import HTTPRequest from './vo/metrics/HTTPRequest.js';
-import FactoryMaker from '../core/FactoryMaker.js';
-import MediaPlayerModel from './models/MediaPlayerModel.js';
-import ErrorHandler from './utils/ErrorHandler.js';
+import {HTTPRequest} from './vo/metrics/HTTPRequest';
+import FactoryMaker from '../core/FactoryMaker';
+import MediaPlayerModel from './models/MediaPlayerModel';
 
 /**
- * @Module XHRLoader
+ * @module XHRLoader
  * @description Manages download of resources via HTTP.
+ * @param {Object} cfg - dependancies from parent
  */
-function XHRLoader() {
+function XHRLoader(cfg) {
     const context = this.context;
 
     //const log = Debug(context).getInstance().log;
     const mediaPlayerModel = MediaPlayerModel(context).getInstance();
-    const errHandler = ErrorHandler(context).getInstance();
 
-    //const errHandler = cfg.errHandler;
-    //const metricsModel = cfg.metricsModel;
-    //const requestModifier = cfg.requestModifier;
+    const errHandler = cfg.errHandler;
+    const metricsModel = cfg.metricsModel;
+    const requestModifier = cfg.requestModifier;
 
     let instance;
     let xhrs;
@@ -70,12 +69,10 @@ function XHRLoader() {
         };
     }
 
-    function internalLoad(config, remainingAttempts, xhr) {
+    function internalLoad(config, remainingAttempts) {
 
         var request = config.request;
-        var metricsModel = config.metricsModel;
-        var requestModifier = config.requestModifier;
-        //var xhr = new XMLHttpRequest();
+        var xhr = new XMLHttpRequest();
         var traces = [];
         var firstProgress = true;
         var needFailureReport = true;
@@ -253,17 +250,13 @@ function XHRLoader() {
      */
     function load(config) {
         if (config.request) {
-            var xhr = new XMLHttpRequest();
             internalLoad(
                 config,
                 mediaPlayerModel.getRetryAttemptsForType(
                     config.request.type
-                ),
-                xhr
+                )
             );
-            return xhr;
         }
-
     }
 
     /**
@@ -271,7 +264,7 @@ function XHRLoader() {
      * @memberof module:XHRLoader
      * @instance
      */
-    function abort(xhr) {
+    function abort() {
         retryTimers.forEach(t => clearTimeout(t));
         retryTimers = [];
 
@@ -282,15 +275,10 @@ function XHRLoader() {
             // abort will trigger onloadend which we don't want
             // when deliberately aborting inflight requests -
             // set them to undefined so they are not called
-            if (x == xhr) {
-                x.onloadend = x.onerror = undefined;
-                x.abort();
-            }
+            x.onloadend = x.onerror = undefined;
+            x.abort();
         });
-        var index = xhrs.indexOf(xhr);
-        if (index > -1) {
-            xhrs.splice(index, 1);
-        }
+        xhrs = [];
     }
 
     instance = {
@@ -304,6 +292,6 @@ function XHRLoader() {
 }
 
 XHRLoader.__dashjs_factory_name = 'XHRLoader';
-export default FactoryMaker.getSingletonFactory(XHRLoader);
-//const factory = FactoryMaker.getClassFactory(XHRLoader);
-//export default factory;
+
+const factory = FactoryMaker.getClassFactory(XHRLoader);
+export default factory;

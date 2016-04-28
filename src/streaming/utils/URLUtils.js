@@ -29,10 +29,10 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-import FactoryMaker from '../../core/FactoryMaker.js';
+import FactoryMaker from '../../core/FactoryMaker';
 
 /**
- * @Module URLUtils
+ * @module URLUtils
  * @description Provides utility functions for operating on URLs.
  * Initially this is simply a method to determine the Base URL of a URL, but
  * should probably include other things provided all over the place such as
@@ -46,6 +46,7 @@ function URLUtils() {
 
     /**
      * Returns a string that contains the Base URL of a URL, if determinable.
+     * @param {string} url - full url
      * @return {string}
      * @memberof module:URLUtils
      * @instance
